@@ -1,0 +1,20 @@
+{
+	"name": "whyflow-engine",
+	"version": "0.1.0",
+	"description": "WhyFlow engine: explain why code execution flows the way it does",
+	"type": "module",
+	"main": "dist/index.js",
+	"exports": {
+		".": "./dist/index.js"
+	},
+	"scripts": {
+		"build": "tsc"
+	},
+	"dependencies": {
+		"@babel/parser": "^7.28.5",
+		"@babel/traverse": "^7.28.5"
+	},
+	"devDependencies": {
+		"typescript": "^5.9.3"
+	}
+}
