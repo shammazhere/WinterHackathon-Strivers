@@ -37,6 +37,22 @@ npm run start:browser
 
 The IDE will be available at: **http://localhost:3000**
 
+### Quick Start (Electron Desktop App)
+
+```bash
+# 1. Install all dependencies
+npm install
+
+# 2. Build the Electron application
+npm run build:electron
+
+# 3. Start the Electron app
+npm run start:electron
+```
+
+The Electron desktop app will launch automatically.
+
+
 ---
 
 ## Detailed Setup Steps
