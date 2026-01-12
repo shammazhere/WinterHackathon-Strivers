@@ -6,39 +6,59 @@ export class StaticAnalyzer {
     private project: Project;
 
     constructor(workspacePath: string) {
-        this.project = new Project();
-        this.project.addSourceFilesAtPaths([
-            `${workspacePath}/**/*.ts`,
-            `${workspacePath}/**/*.tsx`, // Support React files
-            `!${workspacePath}/node_modules/**` // Explicitly ignore node_modules
-        ]);
+        // Resolve to absolute path to avoid relative path confusion
+        const absolutePath = path.resolve(workspacePath);
+
+        this.project = new Project({
+            compilerOptions: {
+                allowJs: true,
+                checkJs: false
+            }
+        });
+
+        // Directly add the files using an absolute glob
+        const searchPath = path.join(absolutePath, "**/*.{js,jsx,ts,tsx}");
+        const ignorePath = `!${path.join(absolutePath, "node_modules/**")}`;
+
+        console.log(`Searching in: ${searchPath}`); // Debug log to verify path
+
+        this.project.addSourceFilesAtPaths([searchPath, ignorePath]);
     }
 
     public generateProjectMap(): ProjectMap {
         const nodes: ProjectNode[] = [];
-        const edges: ProjectEdge[] = []; // Edges are populated via call-expression analysis
+        const edges: ProjectEdge[] = [];
 
         const sourceFiles = this.project.getSourceFiles();
 
         sourceFiles.forEach(sourceFile => {
             const filePath = path.relative(process.cwd(), sourceFile.getFilePath());
 
-            // 1. Find all Function Declarations
+            // 1. Handle Function Declarations
             sourceFile.getDescendantsOfKind(SyntaxKind.FunctionDeclaration).forEach(fn => {
+                const name = fn.getName() || 'anonymous';
                 nodes.push(this.createNode(fn, filePath));
-                this.findEdges(fn, edges);
+
+                // FIX: Pass all 4 required arguments
+                this.findEdges(fn, edges, filePath, name);
             });
 
-            // 2. Find Arrow Functions assigned to variables
+            // 2. Handle Arrow Functions (Variables)
             sourceFile.getDescendantsOfKind(SyntaxKind.VariableDeclaration).forEach(v => {
                 const initializer = v.getInitializer();
-                if (initializer && initializer.getKind() === SyntaxKind.ArrowFunction) {
+                if (initializer && (initializer.getKind() === SyntaxKind.ArrowFunction || initializer.getKind() === SyntaxKind.FunctionExpression)) {
+                    const name = v.getName();
+                    const nodeId = `${filePath}:${name}`;
+
                     nodes.push({
-                        id: `${filePath}:${v.getName()}`,
-                        label: v.getName(),
+                        id: nodeId,
+                        label: name,
                         file: filePath,
                         line: v.getStartLineNumber()
                     });
+
+                    // FIX: Pass all 4 required arguments
+                    this.findEdges(initializer as any, edges, filePath, name);
                 }
             });
         });
@@ -48,26 +68,27 @@ export class StaticAnalyzer {
 
     private createNode(fn: FunctionDeclaration, filePath: string): ProjectNode {
         const name = fn.getName() || 'anonymous';
+        const fileName = path.basename(filePath); 
         return {
-            id: `${filePath}:${name}`,
+            id: `${fileName}:${name}`, 
             label: name,
             file: filePath,
             line: fn.getStartLineNumber()
         };
     }
 
-    private findEdges(fn: FunctionDeclaration, edges: ProjectEdge[]) {
-        const filePath = path.relative(process.cwd(), fn.getSourceFile().getFilePath());
-        const callerId = `${filePath}:${fn.getName()}`;
+    // Add this helper to resolve symbol names to IDs
+    private findEdges(fn: FunctionDeclaration | ArrowFunction, edges: ProjectEdge[], filePath: string, callerName: string) {
+        const fileName = path.basename(filePath);
+        const callerId = `${fileName}:${callerName}`; // Match the simplified ID format
 
-        // Look for call expressions inside this function
         fn.getDescendantsOfKind(SyntaxKind.CallExpression).forEach(call => {
-            const expression = call.getExpression();
-            const targetName = expression.getText();
-
+            const targetName = call.getExpression().getText();
+            
             edges.push({
-                from: callerId,
-                to: targetName // In a production version, we would resolve the actual symbol
+                from: callerId, // "server.js:stepOne"
+                to: targetName,  // "stepTwo"
+                type: 'calls'
             });
         });
     }

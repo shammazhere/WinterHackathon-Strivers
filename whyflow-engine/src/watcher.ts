@@ -110,21 +110,27 @@ export class EngineWatcher {
             const isInProject = absPath.includes(filterPath);
             const hasNoise = noiseKeywords.some(keyword => absPath.includes(keyword));
             const isNextInternal = absPath.includes('.next');
+            
+            const isLibraryCode = absPath.includes('node_modules') || 
+                      absPath.includes('whyflow-engine') ||
+                      absPath.includes('node:internal');
 
             // ONLY proceed if it's in your project AND contains none of the noise
-            if (isInProject && !hasNoise && !isNextInternal) {
+            // if (isInProject && !hasNoise && !isNextInternal) {
+            if (isInProject && !isLibraryCode) {
                 script.functions.forEach((fn: any) => {
                     if (fn.ranges[0].count > 0 && fn.functionName !== "") {
 
                         // Filter out "anonymous" or "eval" style functions that often come from build tools
                         if (fn.functionName.includes('__') || fn.functionName === 'anonymous') return;
 
-                        const fileName = path.basename(absPath);
+                        // Inside processCoverage method
+                        const fileName = path.basename(absPath); // Get just "server.js"
                         const nodeId = `${fileName}:${fn.functionName}`;
 
                         if ((global as any).tracer) {
                             console.log(`🎯 [USER CODE] ${nodeId}`);
-                            (global as any).tracer.emit('CALL', nodeId, { hits: fn.ranges[0].count });
+                            (global as any).tracer.sendHit(nodeId); // This string MUST match the node.id in D3
                         }
                     }
                 });

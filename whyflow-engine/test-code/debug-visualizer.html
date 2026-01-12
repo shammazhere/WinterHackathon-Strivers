@@ -1,169 +1,105 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>PocketFlow Engine | Live Monitor</title>
+    <meta charset="UTF-8">
+    <title>PocketFlow D3 Runtime</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        @keyframes pulse {
-    0% { border-color: var(--accent); box-shadow: 0 0 10px rgba(88,166,255,0.2); }
-    100% { border-color: #30363d; box-shadow: none; }
-}
-
-.event-card:first-child {
-    animation: pulse 0.5s ease-out;
-}
-        :root {
-            --bg: #0d1117;
-            --card: #161b22;
-            --accent: #58a6ff;
-            --call: #3fb950;
-            --return: #f85149;
-        }
-
-        body {
-            background: var(--bg);
-            color: #c9d1d9;
-            font-family: 'Segoe UI', monospace;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        header {
-            background: var(--card);
-            padding: 1rem;
-            border-bottom: 1px solid #30363d;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #status {
-            font-size: 0.8rem;
-            padding: 4px 12px;
-            border-radius: 20px;
-            background: #21262d;
-        }
-
-        .connected {
-            color: var(--call);
-            border: 1px solid var(--call);
-        }
-
-        .disconnected {
-            color: var(--return);
-            border: 1px solid var(--return);
-        }
-
-        #events {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            display: flex;
-            flex-direction: column-reverse;
-            gap: 10px;
-        }
-
-        .event-card {
-            background: var(--card);
-            border: 1px solid #30363d;
-            padding: 15px;
-            border-radius: 6px;
-            transition: transform 0.2s;
-        }
-
-        .event-card:first-child {
-            transform: scale(1.02);
-            border-color: var(--accent);
-            box-shadow: 0 0 15px rgba(88, 166, 255, 0.2);
-        }
-
-        .type-tag {
-            font-weight: bold;
-            font-size: 0.7rem;
-            padding: 2px 6px;
-            border-radius: 3px;
-            margin-right: 10px;
-        }
-
-        .CALL {
-            background: rgba(63, 185, 80, 0.2);
-            color: var(--call);
-        }
-
-        .RETURN {
-            background: rgba(248, 81, 73, 0.2);
-            color: var(--return);
-        }
-
-        .node-id {
-            color: var(--accent);
-            font-family: monospace;
-        }
-
-        pre {
-            background: #010409;
-            padding: 10px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            color: #8b949e;
-            margin-top: 10px;
-        }
+        body { margin: 0; background: #0d1117; overflow: hidden; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+        #canvas { width: 100vw; height: 100vh; }
+        .node circle { stroke: #30363d; stroke-width: 1.5px; fill: #1f6feb; transition: all 0.2s; }
+        .node text { fill: #8b949e; font-size: 10px; font-weight: 400; }
+        .link { stroke: #30363d; stroke-opacity: 0.3; stroke-width: 1px; fill: none; }
+        
+        /* Active states */
+        .node.active circle { fill: #39d353; r: 12; filter: drop-shadow(0 0 8px #39d353); }
+        .node.active text { fill: #fff; font-weight: bold; }
+        .link.active { stroke: #39d353; stroke-opacity: 1; stroke-width: 2px; }
     </style>
 </head>
-
 <body>
-    <header>
-        <div><strong>PocketFlow</strong> <small>Headless Engine v1.0</small></div>
-        <div id="status" class="disconnected">Waiting for Engine...</div>
-    </header>
-
-    <div id="events">
-    </div>
+    <svg id="canvas"></svg>
 
     <script>
+        const svg = d3.select("#canvas");
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const g = svg.append("g");
+
+        const simulation = d3.forceSimulation()
+            .force("link", d3.forceLink().id(d => d.id).distance(100))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
         const ws = new WebSocket('ws://localhost:8080');
-        const container = document.getElementById('events');
-        const status = document.getElementById('status');
-
-        ws.onopen = () => {
-            status.innerText = "● ENGINE LIVE";
-            status.className = "connected";
-        };
-
-        ws.onclose = () => {
-            status.innerText = "○ ENGINE OFFLINE";
-            status.className = "disconnected";
-        };
 
         ws.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            const container = document.getElementById('events');
-            const card = document.createElement('div');
-            card.className = 'event-card';
-
-            // Use a simpler template for high-speed updates
-            card.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <span class="type-tag ${data.type}">${data.type}</span>
-                <span class="node-id">${data.nodeId}</span>
-            </div>
-            <small style="color: #8b949e;">${new Date().toLocaleTimeString()}</small>
-        </div>
-        ${data.metadata ? `<pre>${JSON.stringify(data.metadata, null, 2)}</pre>` : ''}
-    `;
-
-            // FIX: Put the newest hit at the TOP
-            container.prepend(card);
-
-            // Keep only the last 30 events to maintain performance
-            if (container.children.length > 30) {
-                container.removeChild(container.lastChild);
+            const msg = JSON.parse(event.data);
+            
+            if (msg.type === 'INIT_MAP') {
+                updateGraph(msg.data.nodes, msg.data.edges);
+            } else if (msg.type === 'CALL') {
+                triggerAnimation(msg.nodeId);
             }
         };
+
+        function updateGraph(nodes, edges) {
+            // Filter edges to only show connections where BOTH ends exist in our nodes
+            const validEdges = edges.filter(e => 
+                nodes.some(n => n.id === e.from) && 
+                nodes.some(n => n.label === e.to)
+            ).map(e => ({
+                source: e.from,
+                target: nodes.find(n => n.label === e.to).id
+            }));
+
+            const link = g.append("g")
+                .selectAll("line")
+                .data(validEdges)
+                .join("line")
+                .attr("class", "link");
+
+            const node = g.append("g")
+                .selectAll(".node")
+                .data(nodes)
+                .join("g")
+                .attr("class", "node")
+                .attr("id", d => "node-" + btoa(d.id).replace(/=/g, ''));
+
+            node.append("circle").attr("r", 6);
+            node.append("text").attr("dx", 10).attr("dy", 4).text(d => d.label);
+
+            simulation.nodes(nodes).on("tick", () => {
+                link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+                    .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+                node.attr("transform", d => `translate(${d.x},${d.y})`);
+            });
+
+            simulation.force("link").links(validEdges);
+        }
+
+        function triggerAnimation(nodeId) {
+            const safeId = "node-" + btoa(nodeId).replace(/=/g, '');
+            const element = d3.select("#" + safeId);
+
+            if (element.empty()) return;
+
+            // 1. Light up the node
+            element.classed("active", true);
+
+            // 2. Light up any outgoing links (the "flow" effect)
+            g.selectAll(".link")
+                .filter(d => d.source.id === nodeId)
+                .classed("active", true)
+                .transition()
+                .duration(1000)
+                .on("end", function() { d3.select(this).classed("active", false); });
+
+            // 3. Turn off the node after a delay
+            setTimeout(() => {
+                element.classed("active", false);
+            }, 800);
+        }
     </script>
 </body>
-
 </html>

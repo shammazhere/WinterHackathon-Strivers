@@ -6,8 +6,9 @@ export interface ProjectNode {
 }
 
 export interface ProjectEdge {
-    from: string;      // Source Node ID
-    to: string;        // Target Node ID
+    from: string;
+    to: string;
+    type?: string; // Add this line!
 }
 
 export interface ProjectMap {

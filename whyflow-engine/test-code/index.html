@@ -1,32 +1,104 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>PocketFlow Engine Monitor</title>
     <style>
-        body { font-family: monospace; background: #1a1a1a; color: #00ff00; padding: 20px; }
-        .event { border-bottom: 1px solid #333; padding: 5px 0; }
-        .call { color: #00d4ff; }
-        .return { color: #ff00ff; }
+        body {
+            margin: 0;
+            background: #0d1117;
+            color: white;
+            overflow: hidden;
+        }
+
+        #canvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+
+        .node circle {
+            fill: #1f6feb;
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+
+        .node text {
+            fill: #c9d1d9;
+            font-size: 10px;
+        }
+
+        .link {
+            stroke: #30363d;
+            stroke-opacity: 0.6;
+        }
+
+        .node.active circle {
+            fill: #39d353;
+            r: 10;
+        }
     </style>
 </head>
+
 <body>
     <h1>🛰️ PocketFlow Live Feed</h1>
     <div id="log"></div>
 
     <script>
-        const socket = new WebSocket('ws://localhost:8080');
-        const logDiv = document.getElementById('log');
+        const ws = new WebSocket('ws://localhost:8080');
 
-        socket.onopen = () => console.log('✅ Connected to PocketFlow Engine');
-        
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            const entry = document.createElement('div');
-            entry.className = `event ${data.type.toLowerCase()}`;
-            entry.innerHTML = `[${new Date().toLocaleTimeString()}] <b>${data.type}</b>: ${data.nodeId}`;
-            
-            logDiv.prepend(entry);
+        ws.onopen = () => {
+            console.log("Connected! Requesting map...");
+            // Tell the engine we are ready for the blueprint
+            ws.send(JSON.stringify({ type: 'REQUEST_MAP' }));
         };
+
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            console.log("Received message:", msg.type); // Check your Browser Console (F12)
+
+            if (msg.type === 'INIT_MAP') {
+                updateGraph(msg.data.nodes, msg.data.edges);
+            }
+            console.log("📥 Raw Data Received:", event.data); // CHECK YOUR BROWSER CONSOLE (F12)
+            const data = JSON.parse(event.data);
+
+            // Create a simple line instead of a complex card
+            const div = document.createElement('div');
+            div.style.color = "lime";
+            div.innerText = `[${new Date().toLocaleTimeString()}] HIT: ${data.nodeId}`;
+
+            // Insert at the TOP so you see it immediately
+            container.prepend(div);
+        };
+
+        function triggerAnimation(nodeId) {
+            const selector = "#node-" + btoa(nodeId).replace(/=/g, '');
+            const element = d3.select(selector);
+
+            if (element.empty()) return;
+
+            // 1. Highlight the current node
+            element.classed("active", true);
+
+            // 2. Find links where THIS node is the source and make them "flow"
+            g.selectAll(".link")
+                .filter(d => d.source.id === nodeId)
+                .transition()
+                .duration(500)
+                .style("stroke", "#39d353")
+                .style("stroke-width", "4px")
+                .transition()
+                .duration(1000)
+                .style("stroke", "#30363d")
+                .style("stroke-width", "2px");
+
+            // 3. Remove active class after the next function in the chain likely starts
+            setTimeout(() => {
+                element.classed("active", false);
+            }, 1200);
+        }
     </script>
 </body>
+
 </html>

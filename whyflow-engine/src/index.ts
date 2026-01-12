@@ -39,6 +39,7 @@ console.log(`📊 Project Mapped: ${map.nodes.length} functions found.`);
  * Attaches to the Node.js inspector of the running Next.js app.
  * We pass the target path so the watcher knows which files to filter for.
  */
+tracer.setProjectMap(map);
 const targetPort = process.argv[3] ? parseInt(process.argv[3]) : 9229;
 const watcher = new EngineWatcher(absoluteTargetPath, targetPort);
 watcher.connectAndWatch();

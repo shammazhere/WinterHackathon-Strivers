@@ -1,56 +1,66 @@
 import { WebSocketServer, WebSocket } from 'ws';
-import { LiveEvent, EventType } from './types';
-
-let history: any[] = [];
+import { ProjectMap } from './types';
 
 export class RuntimeTracer {
     private wss: WebSocketServer;
-    private clients: Set<WebSocket> = new Set();
+    private projectMap: ProjectMap | null = null; // Store the map here
 
-    constructor(port: number = 8080) {
+    constructor(port: number) {
         this.wss = new WebSocketServer({ port });
+
         this.wss.on('connection', (ws) => {
-            this.clients.add(ws);
-            console.log('🔗 Frontend Connected to Tracer');
-            ws.on('close', () => this.clients.delete(ws));
+            console.log("🔗 Frontend Connected to Tracer");
+            
+            // Give the browser 100ms to initialize its D3 listeners before sending the map
+            setTimeout(() => {
+                if (this.projectMap) {
+                    console.log("📤 Sending map to frontend...");
+                    this.sendMapToClient(ws);
+                }
+            }, 100);
         });
+        
+        this.wss.on('connection', (ws) => {
+            ws.on('message', (rawData) => {
+                const msg = JSON.parse(rawData.toString());
+                if (msg.type === 'REQUEST_MAP' && this.projectMap) {
+                    this.sendMapToClient(ws);
+                }
+            });
+        });
+
         console.log(`📡 Tracer WebSocket server started on ws://localhost:${port}`);
     }
 
-    // This is the "Pulse" sender
-    // Add this at the top of src/tracer.ts (outside the class)
-
-    // Update your emit method:
-    public emit(type: EventType, nodeId: string, metadata?: any) {
-    const event = { type, nodeId, timestamp: Date.now(), metadata };
-    const payload = JSON.stringify(event);
-
-    // DEBUG: If this doesn't print, the Watcher isn't calling the Tracer
-    console.log(`📡 [Tracer] Sending to ${this.clients.size} clients: ${nodeId}`);
-
-    this.clients.forEach(client => {
-        if (client.readyState === 1) { // 1 = OPEN
-            client.send(payload);
-        }
-    });
-}
-
     /**
-     * Professional Wrapper: This wraps a function to automatically 
-     * emit events when it starts and ends.
+     * This is the method your index.ts was looking for!
      */
-    public trace<T extends (...args: any[]) => any>(
-        nodeId: string,
-        fn: T
-    ): T {
-        const _self = this;
-        return function (this: any, ...args: Parameters<T>): ReturnType<T> {
-            _self.emit('CALL', nodeId, { args });
+    public setProjectMap(map: ProjectMap) {
+        this.projectMap = map;
 
-            const result = fn.apply(this, args);
+        // Send the map to any clients already connected
+        this.wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                this.sendMapToClient(client);
+            }
+        });
+    }
 
-            _self.emit('RETURN', nodeId, { result });
-            return result;
-        } as T;
+    private sendMapToClient(ws: WebSocket) {
+        ws.send(JSON.stringify({
+            type: 'INIT_MAP',
+            data: this.projectMap
+        }));
+    }
+
+    public sendHit(nodeId: string) {
+        this.wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                    type: 'CALL',
+                    nodeId: nodeId
+                }));
+            }
+        });
     }
 }
