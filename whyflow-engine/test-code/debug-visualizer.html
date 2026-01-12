@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PocketFlow Engine | Live Monitor</title>
+    <style>
+        :root { --bg: #0d1117; --card: #161b22; --accent: #58a6ff; --call: #3fb950; --return: #f85149; }
+        body { background: var(--bg); color: #c9d1d9; font-family: 'Segoe UI', monospace; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        header { background: var(--card); padding: 1rem; border-bottom: 1px solid #30363d; display: flex; justify-content: space-between; align-items: center; }
+        #status { font-size: 0.8rem; padding: 4px 12px; border-radius: 20px; background: #21262d; }
+        .connected { color: var(--call); border: 1px solid var(--call); }
+        .disconnected { color: var(--return); border: 1px solid var(--return); }
+        
+        #events { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column-reverse; gap: 10px; }
+        .event-card { background: var(--card); border: 1px solid #30363d; padding: 15px; border-radius: 6px; transition: transform 0.2s; }
+        .event-card:first-child { transform: scale(1.02); border-color: var(--accent); box-shadow: 0 0 15px rgba(88, 166, 255, 0.2); }
+        
+        .type-tag { font-weight: bold; font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; margin-right: 10px; }
+        .CALL { background: rgba(63, 185, 80, 0.2); color: var(--call); }
+        .RETURN { background: rgba(248, 81, 73, 0.2); color: var(--return); }
+        
+        .node-id { color: var(--accent); font-family: monospace; }
+        pre { background: #010409; padding: 10px; border-radius: 4px; font-size: 0.8rem; color: #8b949e; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div><strong>PocketFlow</strong> <small>Headless Engine v1.0</small></div>
+        <div id="status" class="disconnected">Waiting for Engine...</div>
+    </header>
+    
+    <div id="events">
+        </div>
+
+    <script>
+        const ws = new WebSocket('ws://localhost:8080');
+        const container = document.getElementById('events');
+        const status = document.getElementById('status');
+
+        ws.onopen = () => {
+            status.innerText = "● ENGINE LIVE";
+            status.className = "connected";
+        };
+
+        ws.onclose = () => {
+            status.innerText = "○ ENGINE OFFLINE";
+            status.className = "disconnected";
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            const card = document.createElement('div');
+            card.className = 'event-card';
+            
+            card.innerHTML = `
+                <div>
+                    <span class="type-tag ${data.type}">${data.type}</span>
+                    <span class="node-id">${data.nodeId}</span>
+                </div>
+                ${data.metadata ? `<pre>${JSON.stringify(data.metadata, null, 2)}</pre>` : ''}
+            `;
+            
+            container.appendChild(card);
+            // Keep only the last 20 events to prevent browser lag
+            if (container.children.length > 20) container.removeChild(container.children[0]);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+import { WebSocketServer, WebSocket } from 'ws';
+import { LiveEvent, EventType } from './types';
+
+export class RuntimeTracer {
+    private wss: WebSocketServer;
+    private clients: Set<WebSocket> = new Set();
+
+    constructor(port: number = 8080) {
+        this.wss = new WebSocketServer({ port });
+        this.wss.on('connection', (ws) => {
+            this.clients.add(ws);
+            console.log('🔗 Frontend Connected to Tracer');
+            ws.on('close', () => this.clients.delete(ws));
+        });
+        console.log(`📡 Tracer WebSocket server started on ws://localhost:${port}`);
+    }
+
+    // This is the "Pulse" sender
+    public emit(type: EventType, nodeId: string, metadata?: any) {
+        const event: LiveEvent = {
+            type,
+            nodeId,
+            timestamp: Date.now(),
+            metadata
+        };
+
+        const payload = JSON.stringify(event);
+        this.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(payload);
+            }
+        });
+
+        // Also log to console for debugging
+        console.log(`[${type}] ${nodeId}`);
+    }
+
+    /**
+     * Professional Wrapper: This wraps a function to automatically 
+     * emit events when it starts and ends.
+     */
+    public trace<T extends (...args: any[]) => any>(
+        nodeId: string,
+        fn: T
+    ): T {
+        const _self = this;
+        return function (this: any, ...args: Parameters<T>): ReturnType<T> {
+            _self.emit('CALL', nodeId, { args });
+
+            const result = fn.apply(this, args);
+
+            _self.emit('RETURN', nodeId, { result });
+            return result;
+        } as T;
+    }
+}
