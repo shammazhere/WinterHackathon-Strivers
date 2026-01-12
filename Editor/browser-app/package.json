@@ -33,7 +33,8 @@
       "config": {
         "preloadPlugins": [
           "../plugins/calm-theme",
-          "../plugins/material-icon-theme/extension"
+          "../plugins/material-icon-theme/extension",
+          "../plugins/material-theme/extension"
         ]
       }
     }
