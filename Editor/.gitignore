@@ -4,3 +4,9 @@ lib
 *.log
 *-app/*
 !*-app/package.json
+
+# Backup directories
+*-backup/
+
+# VS Code extension binaries (we use the extracted versions)
+*.vsix
