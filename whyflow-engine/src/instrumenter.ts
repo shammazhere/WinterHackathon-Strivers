@@ -1,53 +1,60 @@
-import { Project, SyntaxKind, FunctionDeclaration, FunctionExpression, ArrowFunction } from 'ts-morph';
+import { Project, SyntaxKind } from 'ts-morph';
+import * as path from 'path';
 
-export class Instrumenter {
-    public project: Project; // Changed to public so index.ts can access it easily
+export class UniversalInstrumenter {
+    private project: Project;
 
-    constructor(globPath: string) {
+    constructor(targetDir: string) {
         this.project = new Project();
-        this.project.addSourceFilesAtPaths(globPath);
+        // Look for all TS, TSX, JS, and JSX files
+        this.project.addSourceFilesAtPaths([
+            path.join(targetDir, 'src/**/*.{ts,tsx,js,jsx}'),
+            path.join(targetDir, 'pages/**/*.{ts,tsx,js,jsx}'), // For Next.js
+            path.join(targetDir, 'app/**/*.{ts,tsx,js,jsx}')    // For Next.js 13+
+        ]);
     }
 
-    public instrument(): string {
+    public instrumentAndSave(outputDir: string) {
         const sourceFiles = this.project.getSourceFiles();
 
         sourceFiles.forEach(file => {
             const fileName = file.getBaseName();
 
-            // We use a helper array to find all types of functions
-            const allFunctions = [
+            // 1. Inject a 'window' or 'global' safe tracer reference at the top
+            // This ensures React (browser) and Node (server) both find the tracer
+            file.insertStatements(0, `const _PF_TRACER = typeof window !== 'undefined' ? window.tracer : global.tracer;`);
+
+            // 2. Target all types of functions
+            const functions = [
                 ...file.getDescendantsOfKind(SyntaxKind.FunctionDeclaration),
-                ...file.getDescendantsOfKind(SyntaxKind.FunctionExpression),
-                ...file.getDescendantsOfKind(SyntaxKind.ArrowFunction)
+                ...file.getDescendantsOfKind(SyntaxKind.ArrowFunction),
+                ...file.getDescendantsOfKind(SyntaxKind.MethodDeclaration)
             ];
 
-            allFunctions.forEach(fn => {
-                // Get name: check if it's a declaration, or look for an assigned variable name
+            functions.forEach(fn => {
                 let name = "anonymous";
                 if ("getName" in fn && typeof (fn as any).getName === 'function') {
                     name = (fn as any).getName() || "anonymous";
                 }
 
                 const nodeId = `${fileName}:${name}`;
-                console.log(`  💉 Instrumenting: ${nodeId}`);
 
-                // 1. Inject CALL at the very top of the function body
-                // arguments is a built-in JS keyword that captures all passed params
-                fn.insertStatements(0, `global.tracer.emit('CALL', '${nodeId}', { args: Array.from(arguments) });`);
+                // Inject sensors
+                // We use a check to make sure the tracer exists before calling it
+                const callCode = `if(_PF_TRACER) _PF_TRACER.emit('CALL', '${nodeId}');`;
+                const returnCode = `if(_PF_TRACER) _PF_TRACER.emit('RETURN', '${nodeId}');`;
 
-                // 2. Inject RETURN at the end
-                fn.addStatements(`global.tracer.emit('RETURN', '${nodeId}');`);
+                if ("insertStatements" in fn) {
+                    (fn as any).insertStatements(0, callCode);
+                    (fn as any).addStatements(returnCode);
+                }
             });
+
+            // 3. Save to a shadow directory
+            const relativePath = file.getFilePath().split(path.sep).pop()!;
+            file.saveSync(); // Or use file.copy(newPath)
         });
 
-        // Compile to JS
-        const result = this.project.emitToMemory();
-        const files = result.getFiles();
-
-        if (files.length === 0) {
-            throw new Error("No files were emitted. Check your test-code path.");
-        }
-
-        return files[0].text;
+        console.log(`✅ Successfully instrumented ${sourceFiles.length} files.`);
     }
 }

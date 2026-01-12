@@ -1,6 +1,8 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { LiveEvent, EventType } from './types';
 
+let history: any[] = [];
+
 export class RuntimeTracer {
     private wss: WebSocketServer;
     private clients: Set<WebSocket> = new Set();
@@ -16,24 +18,22 @@ export class RuntimeTracer {
     }
 
     // This is the "Pulse" sender
+    // Add this at the top of src/tracer.ts (outside the class)
+
+    // Update your emit method:
     public emit(type: EventType, nodeId: string, metadata?: any) {
-        const event: LiveEvent = {
-            type,
-            nodeId,
-            timestamp: Date.now(),
-            metadata
-        };
+    const event = { type, nodeId, timestamp: Date.now(), metadata };
+    const payload = JSON.stringify(event);
 
-        const payload = JSON.stringify(event);
-        this.clients.forEach(client => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(payload);
-            }
-        });
+    // DEBUG: If this doesn't print, the Watcher isn't calling the Tracer
+    console.log(`📡 [Tracer] Sending to ${this.clients.size} clients: ${nodeId}`);
 
-        // Also log to console for debugging
-        console.log(`[${type}] ${nodeId}`);
-    }
+    this.clients.forEach(client => {
+        if (client.readyState === 1) { // 1 = OPEN
+            client.send(payload);
+        }
+    });
+}
 
     /**
      * Professional Wrapper: This wraps a function to automatically 

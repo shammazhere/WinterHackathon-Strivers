@@ -7,7 +7,11 @@ export class StaticAnalyzer {
 
     constructor(workspacePath: string) {
         this.project = new Project();
-        this.project.addSourceFilesAtPaths(`${workspacePath}/**/*.ts`);
+        this.project.addSourceFilesAtPaths([
+            `${workspacePath}/**/*.ts`,
+            `${workspacePath}/**/*.tsx`, // Support React files
+            `!${workspacePath}/node_modules/**` // Explicitly ignore node_modules
+        ]);
     }
 
     public generateProjectMap(): ProjectMap {
