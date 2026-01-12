@@ -12,6 +12,8 @@
     "@theia/messages": "1.67.0",
     "@theia/monaco": "1.67.0",
     "@theia/navigator": "1.67.0",
+    "@theia/plugin-ext": "1.67.0",
+    "@theia/plugin-ext-vscode": "1.67.0",
     "@theia/preferences": "1.67.0",
     "@theia/process": "1.67.0",
     "@theia/terminal": "1.67.0",
@@ -29,6 +31,15 @@
     "watch": "npm run rebuild && theia build --watch --mode development"
   },
   "theia": {
-    "target": "electron"
+    "target": "electron",
+    "generator": {
+      "config": {
+        "preloadPlugins": [
+          "../plugins/calm-theme",
+          "../plugins/material-icon-theme/extension/extension",
+          "../plugins/material-theme/extension/extension"
+        ]
+      }
+    }
   }
 }
