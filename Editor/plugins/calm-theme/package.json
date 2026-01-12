@@ -1,0 +1,22 @@
+{
+    "name": "calm-theme",
+    "displayName": "Calm Dark Theme",
+    "description": "A calm and clean dark theme for Theia/VS Code",
+    "version": "0.0.1",
+    "publisher": "winterhack",
+    "engines": {
+        "vscode": "^1.60.0"
+    },
+    "categories": [
+        "Themes"
+    ],
+    "contributes": {
+        "themes": [
+            {
+                "label": "Calm Dark",
+                "uiTheme": "vs-dark",
+                "path": "./themes/calm-dark.json"
+            }
+        ]
+    }
+}
