@@ -37,7 +37,8 @@
         "preloadPlugins": [
           "../plugins/calm-theme",
           "../plugins/material-icon-theme/extension/extension",
-          "../plugins/material-theme/extension/extension"
+          "../plugins/material-theme/extension/extension",
+          "../plugins/vsc-material-theme-icons/extension"
         ]
       }
     }

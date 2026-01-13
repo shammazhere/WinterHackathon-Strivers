@@ -8,10 +8,16 @@
     "lib",
     "src"
   ],
-  "dependencies": {
-    "@theia/core": "1.67.0"
+    "dependencies": {
+    "@theia/core": "1.67.0",
+    "@theia/editor": "1.67.0",
+    "@theia/filesystem": "1.67.0",
+    "@theia/workspace": "1.67.0",
+    "@theia/terminal": "1.67.0",
+    "d3": "^7.8.5"
   },
   "devDependencies": {
+    "@types/d3": "^7.4.3",
     "rimraf": "^5.0.0",
     "typescript": "~5.4.5"
   },

@@ -1,9 +1,9 @@
 {
-    "name": "calm-theme",
-    "displayName": "Calm Dark Theme",
-    "description": "A calm and clean dark theme for Theia/VS Code",
-    "version": "0.0.1",
-    "publisher": "winterhack",
+    "name": "whyflow-theme",
+    "displayName": "WhyFlow Dark Theme",
+    "description": "A stunning dark theme with lime green accents for WhyFlow IDE",
+    "version": "1.0.0",
+    "publisher": "whyflow",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -13,7 +13,7 @@
     "contributes": {
         "themes": [
             {
-                "label": "Calm Dark",
+                "label": "WhyFlow Dark",
                 "uiTheme": "vs-dark",
                 "path": "./themes/calm-dark.json"
             }

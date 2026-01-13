@@ -149,3 +149,25 @@ html.lenis {
 ::-webkit-scrollbar-corner {
   background-color: transparent;
 }
+
+/* WhyFlow Specific Styles */
+.whyflow-failure-overlay {
+  animation: slide-in 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translate(-50%, -40%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.whyflow-info-panel h3 {
+  text-shadow: 0 0 10px rgba(163, 230, 53, 0.5);
+}
+
+circle {
+  transition: r 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), fill 0.3s ease;
+}
+
+line {
+  transition: stroke 0.3s ease, stroke-width 0.3s ease;
+}

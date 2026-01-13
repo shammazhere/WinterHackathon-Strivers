@@ -1,165 +1,283 @@
-import { HelloWorldCommandContribution, HelloWorldMenuContribution } from './hello-world-contribution';
+import { HelloWorldCommandContribution, HelloWorldMenuContribution, HelloWorldKeybindingContribution } from './hello-world-contribution';
 import { CommandContribution, MenuContribution } from '@theia/core/lib/common';
 import { ContainerModule } from '@theia/core/shared/inversify';
-
-const glassStyles = `
-/* Glass UI - Calm Dark Theme Enhancement */
-
-:root {
-  --glass-border: 1px solid rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --glass-blur: blur(10px);
-}
-
-/* Background for the entire application */
-body {
-  background: radial-gradient(circle at 10% 20%, #1a1f2c 0%, #0F111A 40%, #050505 100%);
-  background-attachment: fixed;
-  background-size: cover;
-}
-
-/* Make the main shell transparent to reveal the body background */
-.theia-app-shell {
-  background-color: transparent !important;
-}
-
-/* Glass effect for Sidebar */
-.theia-SideBar,
-.theia-nav-container,
-#theia-left-content-panel {
-  background-color: rgba(9, 11, 16, 0.6) !important; /* Semi-transparent version of theme bg */
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-right: var(--glass-border) !important;
-}
-
-/* Glass effect for Panels */
-.theia-Panel,
-.theia-bottom-content-panel {
-  background-color: rgba(9, 11, 16, 0.6) !important;
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-top: var(--glass-border) !important;
-}
-
-/* Glass effect for Activity Bar */
-.theia-ActivityBar {
-  background-color: rgba(9, 11, 16, 0.5) !important;
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-right: var(--glass-border) !important;
-}
-
-/* Editor Groups (Background of files) */
-.theia-editor-container {
-  background-color:  rgba(15, 17, 26, 0.65) !important; /* Slightly more opaque for code readability */
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-}
-
-/* Tabs */
-.p-TabBar {
-  background-color: transparent !important;
-}
-
-.p-TabBar .p-TabBar-tab {
-  background-color: transparent !important;
-  border: none !important;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.p-TabBar .p-TabBar-tab.p-mod-current {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-  opacity: 1;
-  border-top: 2px solid #A3E635 !important; /* Green accent from theme */
-}
-
-/* Context Menus and Dropdowns */
-.theia-Menu, .p-Menu {
-  background-color: rgba(15, 17, 26, 0.9) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: var(--glass-border) !important;
-  box-shadow: var(--glass-shadow);
-  border-radius: 8px;
-}
-
-.p-Menu-item.p-mod-active {
-  background-color: rgba(163, 230, 53, 0.2) !important; /* Green accent hover */
-}
-
-/* Dialogs */
-.theia-dialog {
-  background-color: rgba(15, 17, 26, 0.85) !important;
-  backdrop-filter: blur(16px) !important;
-  -webkit-backdrop-filter: blur(16px) !important;
-  border-radius: 12px;
-  border: var(--glass-border);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-}
-
-/* Scrollbars - Sleek */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-  background-color: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-::-webkit-scrollbar-corner {
-  background-color: transparent;
-}
-`;
+import { WhyFlowView, WhyFlowViewContribution } from './whyflow-view';
+import { WidgetFactory, FrontendApplicationContribution, bindViewContribution, KeybindingContribution } from '@theia/core/lib/browser';
 
 function injectGlassStyles() {
-  if (typeof document !== 'undefined') {
     const style = document.createElement('style');
-    style.type = 'text/css';
-    style.innerHTML = glassStyles;
+    style.textContent = `
+        :root {
+            --whyflow-accent: #A3E635;
+            --whyflow-bg-primary: #0D1117;
+            --whyflow-bg-secondary: #161B22;
+            --whyflow-border: #30363D;
+            --whyflow-text: #E6EDF3;
+            --whyflow-text-muted: #7D8590;
+        }
+
+        .theia-layout-panel {
+            background: var(--whyflow-bg-primary) !important;
+        }
+
+        .whyflow-view-widget {
+            background: linear-gradient(135deg, var(--whyflow-bg-primary) 0%, var(--whyflow-bg-secondary) 100%);
+        }
+
+        .whyflow-failure-overlay {
+            animation: whyflow-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes whyflow-slide-in {
+            from {
+                transform: translate(-50%, -50%) scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes whyflow-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        @keyframes whyflow-glow {
+            0%, 100% { box-shadow: 0 0 5px var(--whyflow-accent), 0 0 10px var(--whyflow-accent); }
+            50% { box-shadow: 0 0 15px var(--whyflow-accent), 0 0 25px var(--whyflow-accent); }
+        }
+
+        .theia-TreeContainer {
+            background: var(--whyflow-bg-primary) !important;
+        }
+
+        .theia-TreeNode:hover {
+            background: rgba(163, 230, 53, 0.1) !important;
+        }
+
+        .theia-TreeNode.theia-mod-selected {
+            background: rgba(163, 230, 53, 0.15) !important;
+        }
+
+        .theia-input {
+            background: var(--whyflow-bg-primary) !important;
+            border-color: var(--whyflow-border) !important;
+        }
+
+        .theia-input:focus {
+            border-color: var(--whyflow-accent) !important;
+            box-shadow: 0 0 0 2px rgba(163, 230, 53, 0.2) !important;
+        }
+
+        .theia-button {
+            background: var(--whyflow-accent) !important;
+            color: var(--whyflow-bg-primary) !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-weight: 600 !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .theia-button:hover {
+            background: #B9EF5A !important;
+            transform: translateY(-1px);
+        }
+
+        .theia-button.secondary {
+            background: var(--whyflow-bg-secondary) !important;
+            color: var(--whyflow-text) !important;
+            border: 1px solid var(--whyflow-border) !important;
+        }
+
+        .theia-button.secondary:hover {
+            background: #21262D !important;
+            border-color: var(--whyflow-accent) !important;
+        }
+
+        .p-TabBar-tab {
+            transition: all 0.2s ease !important;
+        }
+
+        .p-TabBar-tab.p-mod-current {
+            border-top: 2px solid var(--whyflow-accent) !important;
+        }
+
+        .theia-scrollbar-rail {
+            background: transparent !important;
+        }
+
+        .theia-scrollbar-thumb {
+            background: rgba(230, 237, 243, 0.15) !important;
+            border-radius: 4px !important;
+        }
+
+        .theia-scrollbar-thumb:hover {
+            background: rgba(230, 237, 243, 0.25) !important;
+        }
+
+        .monaco-editor .cursors-layer .cursor {
+            background: var(--whyflow-accent) !important;
+            border-color: var(--whyflow-accent) !important;
+        }
+
+        .monaco-editor .line-numbers {
+            color: var(--whyflow-text-muted) !important;
+        }
+
+        .monaco-editor .line-numbers.active-line-number {
+            color: var(--whyflow-text) !important;
+        }
+
+        .monaco-editor .bracket-match {
+            border: 1px solid var(--whyflow-accent) !important;
+            background: rgba(163, 230, 53, 0.1) !important;
+        }
+
+        .monaco-editor .find-widget {
+            background: var(--whyflow-bg-secondary) !important;
+            border: 1px solid var(--whyflow-border) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        .monaco-editor .suggest-widget {
+            background: var(--whyflow-bg-secondary) !important;
+            border: 1px solid var(--whyflow-border) !important;
+            border-radius: 8px !important;
+        }
+
+        .monaco-editor .suggest-widget .monaco-list-row.focused {
+            background: rgba(163, 230, 53, 0.15) !important;
+        }
+
+        .monaco-editor .suggest-widget .monaco-list-row:hover {
+            background: rgba(163, 230, 53, 0.1) !important;
+        }
+
+        .theia-notifications-container {
+            border-radius: 12px !important;
+            overflow: hidden !important;
+        }
+
+        .theia-notification-message {
+            background: var(--whyflow-bg-secondary) !important;
+            border: 1px solid var(--whyflow-border) !important;
+        }
+
+        .theia-notification-message.info {
+            border-left: 4px solid #79C0FF !important;
+        }
+
+        .theia-notification-message.warning {
+            border-left: 4px solid #D29922 !important;
+        }
+
+        .theia-notification-message.error {
+            border-left: 4px solid #F85149 !important;
+        }
+
+        .theia-notification-message.success {
+            border-left: 4px solid var(--whyflow-accent) !important;
+        }
+
+        .theia-quick-open-container {
+            background: var(--whyflow-bg-secondary) !important;
+            border: 1px solid var(--whyflow-border) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 16px 64px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        .theia-menu {
+            background: var(--whyflow-bg-secondary) !important;
+            border: 1px solid var(--whyflow-border) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        .theia-menu-item:hover {
+            background: rgba(163, 230, 53, 0.1) !important;
+        }
+
+        .theia-menubar > .theia-menu-bar-item:hover,
+        .theia-menubar > .theia-menu-bar-item.theia-mod-open {
+            background: rgba(163, 230, 53, 0.15) !important;
+        }
+
+        .p-Widget.p-DockPanel-widget {
+            border: none !important;
+        }
+
+        .theia-side-panel .theia-sidepanel-toolbar {
+            background: var(--whyflow-bg-primary) !important;
+            border-bottom: 1px solid var(--whyflow-border) !important;
+        }
+
+        .theia-mod-active .theia-side-panel {
+            border-color: var(--whyflow-accent) !important;
+        }
+
+        .theia-minimap {
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+
+        .theia-minimap:hover {
+            opacity: 1;
+        }
+
+        .monaco-editor .margin-view-overlays .current-line {
+            border: none !important;
+        }
+
+        .monaco-editor .view-overlays .current-line {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border-left: 2px solid var(--whyflow-accent) !important;
+        }
+
+        kbd {
+            background: var(--whyflow-bg-secondary);
+            border: 1px solid var(--whyflow-border);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 12px;
+            color: var(--whyflow-text);
+        }
+
+        .theia-progress-bar {
+            background: var(--whyflow-accent) !important;
+        }
+
+        .theia-badge {
+            background: var(--whyflow-accent) !important;
+            color: var(--whyflow-bg-primary) !important;
+        }
+
+        .theia-welcome-page-heading {
+            color: var(--whyflow-accent) !important;
+        }
+
+        *::selection {
+            background: rgba(163, 230, 53, 0.3) !important;
+        }
+    `;
     document.head.appendChild(style);
-
-    // Inject Lenis Scroll
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js';
-    script.onload = () => {
-      // @ts-ignore
-      const lenis = new Lenis({
-        duration: 1.2,
-        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        direction: 'vertical',
-        gestureDirection: 'vertical',
-        smooth: true,
-        mouseMultiplier: 1,
-        smoothTouch: false,
-        touchMultiplier: 2,
-      });
-
-      function raf(time: number) {
-        lenis.raf(time);
-        requestAnimationFrame(raf);
-      }
-
-      requestAnimationFrame(raf);
-      console.log('Lenis Scroll Initialized');
-    };
-    document.head.appendChild(script);
-  }
 }
 
 export default new ContainerModule(bind => {
-  // Inject glass UI styles
-  injectGlassStyles();
+    injectGlassStyles();
 
-  // add your contribution bindings here
-  bind(CommandContribution).to(HelloWorldCommandContribution);
-  bind(MenuContribution).to(HelloWorldMenuContribution);
+    bindViewContribution(bind, WhyFlowViewContribution);
+    bind(FrontendApplicationContribution).toService(WhyFlowViewContribution);
+    bind(WhyFlowView).toSelf();
+    bind(WidgetFactory).toDynamicValue(ctx => ({
+        id: WhyFlowView.ID,
+        createWidget: () => ctx.container.get<WhyFlowView>(WhyFlowView)
+    }));
+
+    bind(CommandContribution).to(HelloWorldCommandContribution);
+    bind(MenuContribution).to(HelloWorldMenuContribution);
+    bind(KeybindingContribution).to(HelloWorldKeybindingContribution);
 });

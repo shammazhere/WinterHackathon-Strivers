@@ -1,0 +1,23 @@
+{
+  "name": "whyflow-engine",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/run-dev.js"
+  },
+  "dependencies": {
+    "@babel/generator": "^7.20.0",
+    "@babel/parser": "^7.20.0",
+    "@babel/traverse": "^7.20.0",
+    "@babel/types": "^7.20.0",
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^17.2.3",
+    "fs-extra": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/fs-extra": "^11.0.0",
+    "typescript": "^4.9.0"
+  }
+}
