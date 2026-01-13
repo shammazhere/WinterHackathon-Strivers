@@ -1,16 +1,38 @@
-/* Glass UI - Calm Dark Theme Enhancement */
+/* Glass UI - Precise Calm Dark Theme Alignment */
 
 :root {
+  /* Core Theme Colors from Calm Dark */
+  --calm-bg-darker: #090B10;
+  --calm-bg-main: #0F111A;
+  --calm-accent: #A3E635;
+  --calm-text: #d7dae0;
+  --calm-text-dim: #676E95;
+
+  /* Theia UI Variable Overrides */
+  --theia-layout-color0: var(--calm-bg-darker) !important;
+  --theia-layout-color1: var(--calm-bg-main) !important;
+  --theia-layout-color2: #171b26 !important;
+  --theia-layout-color3: #1c212d !important;
+
+  --theia-accent-color0: var(--calm-accent) !important;
+  --theia-accent-color1: #b4f14e !important;
+
+  --theia-ui-font-color0: #ffffff !important;
+  --theia-ui-font-color1: var(--calm-text) !important;
+  --theia-ui-font-color2: var(--calm-text-dim) !important;
+
+  --theia-border-color: rgba(255, 255, 255, 0.08) !important;
+
+  /* Custom variables for glass effects - Aligned with theme opacities */
   --glass-border: 1px solid rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   --glass-blur: blur(10px);
 }
 
-/* Background for the entire application */
+/* Background for the entire application - Matches editor.background from theme */
 body {
-  background: radial-gradient(circle at 10% 20%, #1a1f2c 0%, #0F111A 40%, #050505 100%);
-  background-attachment: fixed;
-  background-size: cover;
+  background-color: var(--calm-bg-main) !important;
+  background-image: none !important;
 }
 
 /* Make the main shell transparent to reveal the body background */
@@ -18,64 +40,75 @@ body {
   background-color: transparent !important;
 }
 
-/* Glass effect for Sidebar */
+/* Glass effect for Sidebar - Matches activityBar.background opacity (50%) */
 .theia-SideBar,
 .theia-nav-container,
 #theia-left-content-panel {
-  background-color: rgba(9, 11, 16, 0.6) !important;
-  /* Semi-transparent version of theme bg */
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  background-color: rgba(9, 11, 16, 0.5) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
   border-right: var(--glass-border) !important;
 }
 
-/* Glass effect for Panels */
+/* Glass effect for Panels - Matches panel.background opacity (50%) */
 .theia-Panel,
 .theia-bottom-content-panel {
-  background-color: rgba(9, 11, 16, 0.6) !important;
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  background-color: rgba(9, 11, 16, 0.5) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
   border-top: var(--glass-border) !important;
 }
 
-/* Glass effect for Activity Bar */
+/* Glass effect for Activity Bar - Matches activityBar.background opacity (50%) */
 .theia-ActivityBar {
   background-color: rgba(9, 11, 16, 0.5) !important;
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur) !important;
+  -webkit-backdrop-filter: var(--glass-blur) !important;
   border-right: var(--glass-border) !important;
 }
 
-/* Editor Groups (Background of files) */
+/* Editor Groups (Background of files) - Matches editor.background opacity (70%) */
 .theia-editor-container {
-  background-color: rgba(15, 17, 26, 0.65) !important;
-  /* Slightly more opaque for code readability */
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  background-color: rgba(15, 17, 26, 0.7) !important;
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
 }
 
-/* Tabs */
+/* Status Bar Alignment - Matches statusBar.background opacity (60%) */
+.theia-StatusBar {
+  background-color: rgba(9, 11, 16, 0.6) !important;
+  backdrop-filter: blur(5px) !important;
+  color: var(--calm-text-dim) !important;
+  border-top: var(--glass-border) !important;
+}
+
+/* Tabs Styling - Clean & Matches tab opacities */
 .p-TabBar {
   background-color: transparent !important;
-  padding-top: 5px;
+  min-height: 36px !important;
 }
 
 .p-TabBar .p-TabBar-tab {
-  background-color: rgba(255, 255, 255, 0.02) !important;
+  background-color: rgba(9, 11, 16, 0.3) !important;
+  /* Matches tab.inactiveBackground */
   border: none !important;
-  opacity: 0.7;
-  transition: all 0.2s ease;
-  border-radius: 12px 12px 0 0 !important;
-  /* Rounded pill shape */
-  margin-right: 2px;
-  backdrop-filter: blur(5px);
+  opacity: 0.8;
+  margin-right: 2px !important;
+  border-radius: 6px 6px 0 0 !important;
+  transition: all 0.2s ease !important;
+  color: var(--calm-text-dim) !important;
 }
 
 .p-TabBar .p-TabBar-tab.p-mod-current {
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(15, 17, 26, 0.6) !important;
+  /* Matches tab.activeBackground */
   opacity: 1;
-  border-top: none !important;
-  box-shadow: 0 -2px 10px rgba(163, 230, 53, 0.1);
+  color: #ffffff !important;
+  border-top: 2px solid var(--calm-accent) !important;
+}
+
+.p-TabBar .p-TabBar-tab:hover:not(.p-mod-current) {
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
 
 .p-TabBar-tabIcon {
@@ -107,29 +140,30 @@ html.lenis {
 .theia-Menu,
 .p-Menu {
   background-color: rgba(15, 17, 26, 0.9) !important;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
   border: var(--glass-border) !important;
-  box-shadow: var(--glass-shadow);
-  border-radius: 8px;
+  box-shadow: var(--glass-shadow) !important;
+  border-radius: 10px !important;
+  padding: 4px !important;
 }
 
 .p-Menu-item.p-mod-active {
-  background-color: rgba(163, 230, 53, 0.2) !important;
-  /* Green accent hover */
+  background-color: rgba(163, 230, 53, 0.3) !important;
+  border-radius: 6px !important;
 }
 
 /* Dialogs */
 .theia-dialog {
-  background-color: rgba(15, 17, 26, 0.85) !important;
+  background-color: rgba(15, 17, 26, 0.9) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
-  border-radius: 12px;
-  border: var(--glass-border);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  border-radius: 8px !important;
+  border: var(--glass-border) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6) !important;
 }
 
-/* Scrollbars - Sleek */
+/* Scrollbars - Minimalist */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -142,8 +176,7 @@ html.lenis {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(163, 230, 53, 0.4);
-  /* Green accent on hover */
+  background-color: var(--calm-accent);
 }
 
 ::-webkit-scrollbar-corner {
