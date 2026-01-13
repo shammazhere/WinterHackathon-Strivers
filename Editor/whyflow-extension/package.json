@@ -1,0 +1,38 @@
+{
+    "name": "whyflow-extension",
+    "keywords": [
+        "theia-extension"
+    ],
+    "version": "0.0.0",
+    "files": [
+        "lib",
+        "src"
+    ],
+    "dependencies": {
+        "@theia/core": "1.67.0",
+        "@theia/filesystem": "1.67.0",
+        "@theia/workspace": "1.67.0",
+        "@types/d3": "^7.4.3",
+        "d3": "^7.9.0",
+        "ts-morph": "^20.0.0",
+        "ws": "^8.14.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@types/ws": "^8.5.0",
+        "rimraf": "^5.0.0",
+        "typescript": "~5.4.5"
+    },
+    "scripts": {
+        "prepare": "npm run clean && npm run build",
+        "clean": "rimraf lib",
+        "build": "tsc",
+        "watch": "tsc -w"
+    },
+    "theiaExtensions": [
+        {
+            "frontend": "lib/browser/whyflow-frontend-module",
+            "backend": "lib/node/whyflow-backend-module"
+        }
+    ]
+}
