@@ -5,17 +5,51 @@
     <title>PocketFlow D3 Runtime</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        body { margin: 0; background: #0d1117; overflow: hidden; color: #c9d1d9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
-        #canvas { width: 100vw; height: 100vh; }
-        .node circle { stroke: #30363d; stroke-width: 1.5px; fill: #1f6feb; transition: all 0.2s; }
-        .node text { fill: #8b949e; font-size: 10px; font-weight: 400; }
-        .link { stroke: #30363d; stroke-opacity: 0.3; stroke-width: 1px; fill: none; }
-        
-        /* Active states */
-        .node.active circle { fill: #39d353; r: 12; filter: drop-shadow(0 0 8px #39d353); }
-        .node.active text { fill: #fff; font-weight: bold; }
-        .link.active { stroke: #39d353; stroke-opacity: 1; stroke-width: 2px; }
-    </style>
+    body { margin: 0; background: #0d1117; overflow: hidden; color: #c9d1d9; font-family: 'Fira Code', monospace; }
+    #canvas { width: 100vw; height: 100vh; }
+
+    /* Glassmorphism Card */
+    .code-card {
+        background: rgba(22, 27, 34, 0.8);
+        backdrop-filter: blur(12px);
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        padding: 10px;
+        width: 240px;
+        height: 120px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        pointer-events: all;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .card-header { font-size: 10px; color: #8b949e; margin-bottom: 8px; border-bottom: 1px solid #30363d; padding-bottom: 4px; display: flex; justify-content: space-between;}
+    .js-label { color: #f7df1e; font-weight: bold; }
+    
+    pre { margin: 0; font-size: 12px; line-height: 1.4; color: #ff7b72; overflow: hidden; }
+    .fn-name { color: #d2a8ff; }
+    .bracket { color: #e6edf3; }
+
+    /* Flowing Links */
+    .link { stroke: #30363d; stroke-width: 2px; fill: none; marker-end: url(#arrow); }
+    .link.active { stroke: #39d353; stroke-width: 3px; filter: drop-shadow(0 0 5px #39d353); }
+
+    /* Active Glow Hit */
+    .node.active .code-card {
+        border-color: #39d353;
+        background: rgba(57, 211, 83, 0.15);
+        transform: scale(1.05);
+        transition: all 0.1s ease;
+        box-shadow: 0 0 20px rgba(57, 211, 83, 0.3);
+    }
+        /* Add a label in the middle of the links */
+    .link-label {
+        fill: #8b949e;
+        font-size: 10px;
+        text-anchor: middle;
+        pointer-events: none;
+    }
+</style>
 </head>
 <body>
     <svg id="canvas"></svg>
@@ -25,11 +59,20 @@
         const width = window.innerWidth;
         const height = window.innerHeight;
         const g = svg.append("g");
+        const zoom = d3.zoom().on("zoom", (event) => {
+            g.attr("transform", event.transform);
+        });
+
+        svg.call(zoom);
 
         const simulation = d3.forceSimulation()
-            .force("link", d3.forceLink().id(d => d.id).distance(100))
-            .force("charge", d3.forceManyBody().strength(-300))
-            .force("center", d3.forceCenter(width / 2, height / 2));
+        // 1. Increase distance between linked functions
+        .force("link", d3.forceLink().id(d => d.id).distance(300)) 
+        // 2. Stronger pull away from each other
+        .force("charge", d3.forceManyBody().strength(-800)) 
+        // 3. CRITICAL: Prevent overlapping cards
+        .force("collision", d3.forceCollide().radius(150)) 
+        .force("center", d3.forceCenter(width / 2, height / 2));
 
         const ws = new WebSocket('ws://localhost:8080');
 
@@ -44,38 +87,71 @@
         };
 
         function updateGraph(nodes, edges) {
-            // Filter edges to only show connections where BOTH ends exist in our nodes
-            const validEdges = edges.filter(e => 
-                nodes.some(n => n.id === e.from) && 
-                nodes.some(n => n.label === e.to)
-            ).map(e => ({
-                source: e.from,
-                target: nodes.find(n => n.label === e.to).id
-            }));
+                g.selectAll("*").remove(); // Clear for fresh render
 
-            const link = g.append("g")
-                .selectAll("line")
-                .data(validEdges)
-                .join("line")
-                .attr("class", "link");
+                // Define Arrowhead
+                svg.append("defs").append("marker")
+                    .attr("id", "arrow").attr("viewBox", "0 -5 10 10").attr("refX", 255).attr("refY", 0)
+                    .attr("markerWidth", 6).attr("markerHeight", 6).attr("orient", "auto")
+                    .append("path").attr("d", "M0,-5L10,0L0,5").attr("fill", "#30363d");
 
-            const node = g.append("g")
-                .selectAll(".node")
-                .data(nodes)
-                .join("g")
-                .attr("class", "node")
-                .attr("id", d => "node-" + btoa(d.id).replace(/=/g, ''));
+                const validEdges = edges.map(e => ({
+                    source: nodes.find(n => n.id === e.from),
+                    target: nodes.find(n => n.label === e.to)
+                })).filter(e => e.source && e.target);
 
-            node.append("circle").attr("r", 6);
-            node.append("text").attr("dx", 10).attr("dy", 4).text(d => d.label);
+                const link = g.append("g")
+                    .selectAll("line")
+                    .data(validEdges)
+                    .join("line")
+                    .attr("class", "link");
 
-            simulation.nodes(nodes).on("tick", () => {
-                link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-                    .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
-                node.attr("transform", d => `translate(${d.x},${d.y})`);
-            });
+                const node = g.append("g")
+                    .selectAll(".node")
+                    .data(nodes)
+                    .join("foreignObject") // <--- MAGIC PART
+                    .attr("width", 260)
+                    .attr("height", 140)
+                    .attr("class", "node")
+                    .attr("id", d => "node-" + btoa(d.id).replace(/=/g, ''))
+                    .call(d3.drag()
+                        .on("start", (event, d) => {
+        // "alphaTarget" keeps the simulation "warm" so other nodes react to the move
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    })
+    .on("drag", (event, d) => {
+        // Update fixed position to mouse coordinates
+        d.fx = event.x;
+        d.fy = event.y;
+    })
+                        .on("end", (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
 
-            simulation.force("link").links(validEdges);
+                node.html(d => `
+                    <div class="code-card">
+                        <div class="card-header">
+                            <span><span class="js-label">JS</span> ${d.file}</span>
+                            <span>/src</span>
+                        </div>
+                        <pre><code><span class="keyword">function</span> <span class="fn-name">${d.label}</span><span class="bracket">() {</span>
+              <span style="color: #8b949e">// executing...</span>
+            <span class="bracket">}</span></code></pre>
+                    </div>
+                `);
+
+                simulation.nodes(nodes).on("tick", () => {
+                    // Update lines to hit the edges of the cards, not the top-left corner
+                    link.attr("x1", d => d.source.x + 130)
+                        .attr("y1", d => d.source.y + 70)
+                        .attr("x2", d => d.target.x + 130)
+                        .attr("y2", d => d.target.y + 70);
+
+                    node.attr("x", d => d.x).attr("y", d => d.y);
+                });
+
+                simulation.force("link").links(validEdges);
+                simulation.alpha(1).restart();
         }
 
         function triggerAnimation(nodeId) {
