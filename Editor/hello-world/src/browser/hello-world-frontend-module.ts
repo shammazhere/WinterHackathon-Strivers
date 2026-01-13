@@ -236,6 +236,94 @@ function injectGlassStyles() {
     style.innerHTML = glassStyles;
     document.head.appendChild(style);
 
+    // Inject Monaco Token Colors for Enhanced Syntax Highlighting
+    setTimeout(() => {
+      // @ts-ignore
+      if (window.monaco && window.monaco.editor) {
+        // @ts-ignore
+        window.monaco.editor.defineTheme('enhanced-calm-dark', {
+          base: 'vs-dark',
+          inherit: true,
+          rules: [
+            // Keywords - Vibrant purple/magenta
+            { token: 'keyword', foreground: 'C792EA', fontStyle: 'bold' },
+            { token: 'keyword.control', foreground: 'C792EA', fontStyle: 'bold' },
+            { token: 'storage.type', foreground: 'C792EA' },
+            { token: 'storage.modifier', foreground: 'C792EA' },
+
+            // Functions - Bright cyan/blue
+            { token: 'entity.name.function', foreground: '82AAFF', fontStyle: 'bold' },
+            { token: 'support.function', foreground: '82AAFF' },
+            { token: 'meta.function-call', foreground: '82AAFF' },
+
+            // Variables - Soft white/cream
+            { token: 'variable', foreground: 'D6DEEB' },
+            { token: 'variable.parameter', foreground: 'D6DEEB' },
+            { token: 'variable.other', foreground: 'D6DEEB' },
+
+            // Strings - Warm green
+            { token: 'string', foreground: 'C3E88D' },
+            { token: 'string.quoted', foreground: 'C3E88D' },
+            { token: 'string.template', foreground: 'C3E88D' },
+
+            // Numbers - Orange
+            { token: 'constant.numeric', foreground: 'F78C6C' },
+            { token: 'constant.language', foreground: 'FF5370' },
+
+            // Comments - Muted gray with italic
+            { token: 'comment', foreground: '637777', fontStyle: 'italic' },
+            { token: 'comment.line', foreground: '637777', fontStyle: 'italic' },
+            { token: 'comment.block', foreground: '637777', fontStyle: 'italic' },
+
+            // Classes & Types - Yellow/gold
+            { token: 'entity.name.type', foreground: 'FFCB6B', fontStyle: 'bold' },
+            { token: 'entity.name.class', foreground: 'FFCB6B', fontStyle: 'bold' },
+            { token: 'support.class', foreground: 'FFCB6B' },
+            { token: 'support.type', foreground: 'FFCB6B' },
+
+            // Properties - Light blue
+            { token: 'variable.other.property', foreground: '80CBC4' },
+            { token: 'support.variable.property', foreground: '80CBC4' },
+
+            // Operators - Cyan
+            { token: 'keyword.operator', foreground: '89DDFF' },
+            { token: 'punctuation', foreground: '89DDFF' },
+
+            // Tags (HTML/JSX) - Red/pink
+            { token: 'entity.name.tag', foreground: 'F07178', fontStyle: 'bold' },
+            { token: 'meta.tag', foreground: 'F07178' },
+
+            // Attributes - Yellow
+            { token: 'entity.other.attribute-name', foreground: 'C792EA' },
+
+            // Constants - Orange
+            { token: 'variable.other.constant', foreground: 'F78C6C' },
+            { token: 'support.constant', foreground: 'F78C6C' },
+
+            // Imports/Modules - Purple
+            { token: 'keyword.control.import', foreground: 'C792EA', fontStyle: 'bold' },
+            { token: 'keyword.control.export', foreground: 'C792EA', fontStyle: 'bold' },
+
+            // Special - Accent green
+            { token: 'variable.language.this', foreground: 'A3E635', fontStyle: 'italic' },
+            { token: 'variable.language.super', foreground: 'A3E635', fontStyle: 'italic' },
+          ],
+          colors: {
+            'editor.background': '#0F111A',
+            'editor.foreground': '#D6DEEB',
+            'editorLineNumber.foreground': '#4B5579',
+            'editorCursor.foreground': '#A3E635',
+            'editor.selectionBackground': '#1E293B',
+            'editor.lineHighlightBackground': '#171B26',
+          }
+        });
+
+        // @ts-ignore
+        window.monaco.editor.setTheme('enhanced-calm-dark');
+        console.log('Enhanced syntax highlighting applied');
+      }
+    }, 1000);
+
     // Inject Lenis Scroll
     const script = document.createElement('script');
     script.src = 'https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js';
@@ -260,7 +348,6 @@ function injectGlassStyles() {
       requestAnimationFrame(raf);
       console.log('Lenis Scroll Initialized');
     };
-    document.head.appendChild(script);
     document.head.appendChild(script);
   }
 }
